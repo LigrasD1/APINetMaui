@@ -1,0 +1,6 @@
+@APINetMaui_HostAddress = http://localhost:5269
+
+GET {{APINetMaui_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
