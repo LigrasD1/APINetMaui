@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using APINetMaui.Models;
+using Microsoft.AspNetCore.Identity.Data;
 
 namespace APINetMaui.Controllers
 {
@@ -62,48 +63,65 @@ namespace APINetMaui.Controllers
             return response;
         }
 
-        // PUT: api/Usuarios/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUsuario(int id, UsuarioRequest usuario)
+        [HttpPost("ValidarCrendencial")]
+        public async Task<IActionResult> ValidarCredencial(UsuarioLoginRequest usuario)
         {
-            if (id != usuario.id)
-            {
-                return BadRequest();
-            }
+            Usuario? UsuarioEncontrado= await _context.Usuarios.FirstOrDefaultAsync(x=>x.email.Equals(usuario.Email) && x.password.Equals(usuario.Password));
             //Buscar usuario, sin o existe, devolver nocontent
-            Usuario? UserDB= await _context.Usuarios.FindAsync(id);
-            if (UserDB == null) 
+            if (UsuarioEncontrado != null) 
             {
-                return BadRequest();
+                UsuarioResponse LoginResponse = new UsuarioResponse()
+                {
+                    username=UsuarioEncontrado.username,
+                    phone=UsuarioEncontrado.phone,
+                    email=UsuarioEncontrado.email,
+                    name=UsuarioEncontrado.name,
+                    id= UsuarioEncontrado.id,
+                };
+                return Ok(LoginResponse);
             }
+            else
+            {
+                return BadRequest("El usuario no existe");
+            }
+        }
 
-            UserDB.phone = usuario.phone;
-            UserDB.name = usuario.name;
-            UserDB.username = usuario.username;
-            
+        [HttpPost("Registrarse")]
+        public async Task<IActionResult> RegistroDeUsuario(RegistroUsuarioRequest NuevoRegistro)
+        {
+            var ExisteUsuario = await _context.Usuarios.AnyAsync(x => x.username.Equals(NuevoRegistro.username) && x.email.Equals(NuevoRegistro.email));
+            if (ExisteUsuario) 
+            {
+                return BadRequest("Usuario ya existente. Cambie su nombre de usuario y correo.");
+            }
+            Usuario NuevoUsuario = new Usuario()
+            {
+                name = NuevoRegistro.name,
+                username = NuevoRegistro.username,
+                password = NuevoRegistro.password,
+                email = NuevoRegistro.email,
+                phone = NuevoRegistro.phone
+            };
 
             try
             {
-                _context.Usuarios.Update(UserDB);
-
-                await _context.SaveChangesAsync();
+                _context.Usuarios.Add(NuevoUsuario);
+                _context.SaveChanges();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
-                if (!UsuarioExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest("Ocurrio un error al intentar guardar");
             }
-
-            return NoContent();
+            UsuarioResponse usuarioResponse = new UsuarioResponse()
+            {
+                name = NuevoUsuario.name,
+                username = NuevoUsuario.username,
+                email = NuevoUsuario.email,
+                phone= NuevoUsuario.phone,
+                id=NuevoUsuario.id
+            };
+            return Ok(usuarioResponse);
         }
-
         // POST: api/Usuarios
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
@@ -129,6 +147,43 @@ namespace APINetMaui.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPut("{UserId:int}")]
+        public async Task<IActionResult> ModificarUsuario([FromBody] RegistroUsuarioRequest Model, [FromRoute] int UserId)
+        {
+            var UsuarioExiste = UsuarioExists(UserId);
+            if (!UsuarioExiste)
+            {
+                return BadRequest("Usuario no encontrado");
+            }
+            Usuario? UserEncontrado = await _context.Usuarios.FirstOrDefaultAsync(x => x.id == UserId);
+
+            if(UserEncontrado.phone!=Model.phone) UserEncontrado.phone = Model.phone;
+            if(UserEncontrado.name != Model.name) UserEncontrado.name = Model.name;
+            if(UserEncontrado.password != Model.password) UserEncontrado.password = Model.password;
+            if(UserEncontrado.email != Model.email) UserEncontrado.email = Model.email;
+            if(UserEncontrado.username != Model.username) UserEncontrado.username = Model.username;
+            _context.Usuarios.Update(UserEncontrado);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                return BadRequest("A ocurrido un error al guardar");
+            }
+
+            UsuarioResponse Response = new UsuarioResponse
+            {
+                id = UserEncontrado.id,
+                name = UserEncontrado.name,
+                email = UserEncontrado.email,
+                username = UserEncontrado.username,
+                phone = UserEncontrado.phone
+            };
+            return Ok(Response);
         }
 
         private bool UsuarioExists(int id)

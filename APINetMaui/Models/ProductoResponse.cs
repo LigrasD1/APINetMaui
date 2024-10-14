@@ -8,5 +8,6 @@
         public string? description { get; set; }
         public string? category { get; set; }
         public string? image { get; set; }
+        public int stock { get; set; }
     }
 }

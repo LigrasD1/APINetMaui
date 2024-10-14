@@ -14,6 +14,8 @@ namespace APINetMaui.Models
         public string? category { get; set; }
         public string? imageDirectory { get; set; }
         public string? ImagenLink { get; set; }
+        public int stock { get; set; }
+
 
 
         public ICollection<ProductoCarrito>? ProductoCarritos { get; set; }

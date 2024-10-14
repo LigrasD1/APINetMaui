@@ -7,6 +7,7 @@
         public double price { get; set; }
         public string? description { get; set; }
         public string? category { get; set; }
-        public IFormFile Imagen {  get; set; }
+        public int stock { get; set; }
+        public IFormFile? Imagen {  get; set; }
     }
 }

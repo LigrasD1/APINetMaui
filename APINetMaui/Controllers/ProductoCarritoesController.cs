@@ -20,124 +20,154 @@ namespace APINetMaui.Controllers
             _context = context;
         }
 
-        // GET: api/ProductoCarritoes
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<ProductoCarrito>>> GetProductosCarritos()
-        //{
-        //    return await _context.ProductosCarritos.ToListAsync();
-        //}
-
-        //// GET: api/ProductoCarritoes/5
-        //[HttpGet("{id}")]
-        //public async Task<ActionResult<ProductoCarrito>> GetProductoCarrito(int id)
-        //{
-        //    var productoCarrito = await _context.ProductosCarritos.FindAsync(id);
-
-        //    if (productoCarrito == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    return productoCarrito;
-        //}
-
-        // PUT: api/ProductoCarritoes/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProductoCarrito(int id, ProductoResponse producto)
+        [HttpGet("{userId:int}")]
+        public async Task<IActionResult> ObtenerProductosCarrito(int userId)
         {
-            // Buscar el carrito por id
-            Carrito? carro = await _context.Carritos
-                                           .Include(c => c.ProductoCarritos) // Asegurarse de incluir la relación de ProductoCarritos
-                                           .FirstOrDefaultAsync(c => c.id == id);
+            var productosCarrito = await _context.ProductosCarritos
+        .Where(pc => pc.Carrito.UsuarioId == userId)
+        .Select(pc => new
+        {
+            ProductoId = pc.ProductoId,
+            Titulo = pc.Producto.title,
+            Precio = pc.Producto.price,
+            Cantidad = pc.Cantidad,
+            imagen=pc.Producto.ImagenLink,
+            Total = pc.Cantidad * pc.Producto.price
+        })
+        .ToListAsync();
 
-            if (carro == null)
+            // No es necesario retornar un BadRequest si el carrito está vacío; podemos devolver simplemente la lista vacía.
+            return Ok(productosCarrito);
+        }
+        [HttpPut]
+        public async Task<IActionResult> ComprarProductosCarrito(int userId)
+        {
+            List<ProductoCarrito> productosCarrito = await _context.ProductosCarritos
+                                   .Include(pc => pc.Producto) 
+                                   .Where(pc => pc.Carrito.UsuarioId == userId)
+                                   .ToListAsync();
+
+            // Verificar si el carrito está vacío
+            if (productosCarrito.Count == 0)
             {
-                return BadRequest("No existe un carrito");
+                return NotFound("Carrito sin productos");
             }
 
-            // Buscar el producto por id (este id debería ser el id del producto, no del carrito)
-            Producto? prdt = await _context.Productos.FindAsync(producto.id);
-            if (prdt == null)
+            // Verificar si hay stock suficiente para todos los productos en el carrito
+            foreach (var productoCarrito in productosCarrito)
             {
-                return BadRequest("No existe el producto");
+                if (productoCarrito.Producto.stock < productoCarrito.Cantidad)
+                {
+                    return BadRequest($"No hay suficiente stock para el producto {productoCarrito.Producto.title}. Stock disponible: {productoCarrito.Producto.stock}");
+                }
+            }
+
+            // Reducir el stock para cada producto y proceder con la "compra"
+            foreach (var productoCarrito in productosCarrito)
+            {
+                productoCarrito.Producto.stock -= productoCarrito.Cantidad;
+            }
+
+            // Guardar los cambios en la base de datos
+            await _context.SaveChangesAsync();
+
+            //  Vaciar el carrito después de la compra
+            _context.ProductosCarritos.RemoveRange(productosCarrito);
+            await _context.SaveChangesAsync();
+
+            return Ok("Compra realizada exitosamente");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> PostProductoCarrito(int usuarioId, int idproducto,int cantidad)
+        {
+            Producto? producto = await _context.Productos.FirstOrDefaultAsync(c => c.id == idproducto);
+            if (producto == null)
+            {
+                return NotFound("Producto no encontrado");
+            }
+
+            // Verificar si hay suficiente stock
+            if (producto.stock < cantidad)
+            {
+                return BadRequest("No hay suficiente stock");
+            }
+
+            // Buscar el carrito del usuario, si no existe, se crea uno nuevo
+            Carrito? carrito = await _context.Carritos
+                  .Include(c => c.ProductoCarritos)
+                  .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
+            if (carrito == null)
+            {
+                carrito = new Carrito
+                {
+                    date = DateTime.Now,
+                    UsuarioId = usuarioId,
+                    ProductoCarritos = new List<ProductoCarrito>()
+                };
+
+                _context.Carritos.Add(carrito); // Agregar el nuevo carrito al contexto
             }
 
             // Verificar si el producto ya está en el carrito
-            var productoCarritoExistente = carro.ProductoCarritos
-                .FirstOrDefault(pc => pc.ProductoId == producto.id);
+            ProductoCarrito productoCarritoExistente = carrito.ProductoCarritos
+                .FirstOrDefault(pc => pc.ProductoId == idproducto);
 
             if (productoCarritoExistente != null)
             {
-                // Si ya existe, solo actualiza la cantidad
-                productoCarritoExistente.Cantidad++;
+                // Si el producto ya está en el carrito, simplemente aumentar la cantidad
+                productoCarritoExistente.Cantidad += cantidad;
             }
             else
             {
-                // Si no existe, agregar una nueva instancia de ProductoCarrito
-                var nuevoProductoCarrito = new ProductoCarrito
+                // Si no está, agregar un nuevo ProductoCarrito
+                ProductoCarrito nuevoProductoCarrito = new ProductoCarrito
                 {
-                    ProductoId = prdt.id,
-                    Producto = prdt,
-                    CarritoId = carro.id,
-                    Carrito = carro,
-                    Cantidad = 1
+                    ProductoId = idproducto,
+                    Cantidad = cantidad,
+                    CarritoId = carrito.id,
                 };
-
-                carro.ProductoCarritos.Add(nuevoProductoCarrito);
+                carrito.ProductoCarritos.Add(nuevoProductoCarrito);
             }
 
-            // Guardar los cambios
             try
             {
                 await _context.SaveChangesAsync();
+
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
-                if (!ProductoCarritoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest("No se ha podido guardar el producto en el carrito");
             }
 
-            return NoContent();
+            return Ok("Producto agregado al carrito");
         }
 
         // POST: api/ProductoCarritoes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-       
+
 
         // DELETE: api/ProductoCarritoes/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProductoCarrito(int id)
+        [HttpDelete]
+        public async Task<IActionResult> EliminarProductoCarrito(int userId, int productoId)
         {
-            // Buscar la relación ProductoCarrito por su id
-            ProductoCarrito? productoCarrito = await _context.ProductosCarritos
-                                                             .FindAsync(id);
+            // Buscar el producto en el carrito del usuario
+            var productoCarrito = await _context.ProductosCarritos
+                .FirstOrDefaultAsync(pc => pc.Carrito.UsuarioId == userId && pc.ProductoId == productoId);
 
+            // Verificar si el producto existe en el carrito
             if (productoCarrito == null)
             {
-                return NotFound("No se encontró la relación ProductoCarrito.");
+                return NotFound("Producto no encontrado en el carrito");
             }
 
-            // Eliminar la relación ProductoCarrito
+            // Eliminar el producto del carrito
             _context.ProductosCarritos.Remove(productoCarrito);
 
-            // Guardar los cambios
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return StatusCode(500, "Error al eliminar el producto del carrito.");
-            }
+            // Guardar los cambios en la base de datos
+            await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok("Producto eliminado del carrito");
         }
 
         private bool ProductoCarritoExists(int id)

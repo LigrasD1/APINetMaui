@@ -41,6 +41,7 @@ namespace APINetMaui.Controllers
                     description=item.description,
                     category=item.category,
                     image=item.ImagenLink,
+                    stock=item.stock
                 });
             }
             
@@ -51,7 +52,7 @@ namespace APINetMaui.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductoResponse>> GetProducto(int id)
         {
-            Producto? producto = await _context.Productos.FindAsync(id);
+            Producto? producto = await _context.Productos.FirstOrDefaultAsync(x=>x.id==id);
             
             if (producto == null)
             {
@@ -72,7 +73,7 @@ namespace APINetMaui.Controllers
         // PUT: api/Productoes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{productoid:int}")]
-        public async Task<IActionResult> PutProducto([FromRoute]int productoid,[FromBody] ProductoRequest model)
+        public async Task<IActionResult> PutProducto([FromForm] ProductoRequest model, [FromRoute] int productoid)
         {
             Producto? producto=await _context.Productos.FirstOrDefaultAsync(x=>x.id== productoid);
 
@@ -95,6 +96,7 @@ namespace APINetMaui.Controllers
                 var baseURL = $"{request.Scheme}://{request.Host}";
                 producto.ImagenLink = $"{baseURL}{producto.imageDirectory}";
             }
+            if (model.stock != null) producto.stock = model.stock;
 
             _context.Entry(producto).State = EntityState.Modified;
 
@@ -106,15 +108,15 @@ namespace APINetMaui.Controllers
             {
                 if (!ProductoExists(productoid))
                 {
-                    return NotFound();
+                    return NotFound("Ocurrio un error");
                 }
                 else
                 {
                     throw;
                 }
-            }   
-
-            return NoContent();
+            }
+           
+            return Ok("Producto modificado correctamente");
         }
 
         // POST: api/Productoes
@@ -128,6 +130,7 @@ namespace APINetMaui.Controllers
                 title = model.title,
                 description = model.description,
                 category = model.category,
+                stock= model.stock,
                 imageDirectory = await GuardarImagen(model.Imagen),
 
             };
@@ -141,17 +144,9 @@ namespace APINetMaui.Controllers
                 _context.Productos.Add(producto);
                 await _context.SaveChangesAsync();
 
-                var response = new ProductoResponse
-                {
-                    image = producto.ImagenLink,
-                    price = producto.price,
-                    title = producto.title,
-                    description = producto.description,
-                    category = producto.category
+               
 
-                };
-
-                return Ok(response);
+                return Ok("Producto cargado correctamente");
             }
             catch (Exception)
             {
@@ -183,6 +178,7 @@ namespace APINetMaui.Controllers
 
         private async Task< string> GuardarImagen(IFormFile formFile)
         {
+            
             if (formFile != null && formFile.Length > 0) 
             {
                 // Generar una ruta única para la imagen
