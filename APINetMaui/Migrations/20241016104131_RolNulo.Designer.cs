@@ -4,6 +4,7 @@ using APINetMaui.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace APINetMaui.Migrations
 {
     [DbContext(typeof(ApidbContext))]
-    partial class ApidbContextModelSnapshot : ModelSnapshot
+    [Migration("20241016104131_RolNulo")]
+    partial class RolNulo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,7 +119,7 @@ namespace APINetMaui.Migrations
 
                     b.HasKey("IdRol");
 
-                    b.ToTable("Rols");
+                    b.ToTable("Rol");
                 });
 
             modelBuilder.Entity("APINetMaui.Models.Usuario", b =>

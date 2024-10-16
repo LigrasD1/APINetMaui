@@ -4,6 +4,7 @@ using APINetMaui.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace APINetMaui.Migrations
 {
     [DbContext(typeof(ApidbContext))]
-    partial class ApidbContextModelSnapshot : ModelSnapshot
+    [Migration("20241016103809_Roles")]
+    partial class Roles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,7 +119,7 @@ namespace APINetMaui.Migrations
 
                     b.HasKey("IdRol");
 
-                    b.ToTable("Rols");
+                    b.ToTable("Rol");
                 });
 
             modelBuilder.Entity("APINetMaui.Models.Usuario", b =>
@@ -127,7 +130,7 @@ namespace APINetMaui.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
 
-                    b.Property<int?>("IdRol")
+                    b.Property<int>("IdRol")
                         .HasColumnType("int");
 
                     b.Property<string>("email")
@@ -191,7 +194,9 @@ namespace APINetMaui.Migrations
                 {
                     b.HasOne("APINetMaui.Models.Rol", "rol")
                         .WithMany("Usuarios")
-                        .HasForeignKey("IdRol");
+                        .HasForeignKey("IdRol")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("rol");
                 });

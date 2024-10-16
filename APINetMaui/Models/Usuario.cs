@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace APINetMaui.Models
 {
@@ -16,6 +17,11 @@ namespace APINetMaui.Models
         public string phone { get; set; }
 
         public  ICollection<Carrito> carrito { get; set; } = new List<Carrito>();
+
+        public int? IdRol { get; set; }
+
+        [ForeignKey("IdRol")]
+        public Rol? rol { get; set; }
     }
 
 
