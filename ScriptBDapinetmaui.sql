@@ -1,6 +1,6 @@
 USE [ApiNetmaui]
 GO
-/****** Object:  Table [dbo].[Carritos]    Script Date: 14/10/2024 19:47:51 ******/
+/****** Object:  Table [dbo].[Carritos]    Script Date: 18/10/2024 22:28:46 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -15,7 +15,7 @@ CREATE TABLE [dbo].[Carritos](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Productos]    Script Date: 14/10/2024 19:47:51 ******/
+/****** Object:  Table [dbo].[Productos]    Script Date: 18/10/2024 22:28:46 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -35,7 +35,7 @@ CREATE TABLE [dbo].[Productos](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[ProductosCarritos]    Script Date: 14/10/2024 19:47:51 ******/
+/****** Object:  Table [dbo].[ProductosCarritos]    Script Date: 18/10/2024 22:28:46 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -51,7 +51,21 @@ CREATE TABLE [dbo].[ProductosCarritos](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[Usuarios]    Script Date: 14/10/2024 19:47:51 ******/
+/****** Object:  Table [dbo].[Rols]    Script Date: 18/10/2024 22:28:46 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Rols](
+	[IdRol] [int] IDENTITY(1,1) NOT NULL,
+	[rol] [nvarchar](max) NULL,
+ CONSTRAINT [PK_Rols] PRIMARY KEY CLUSTERED 
+(
+	[IdRol] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Usuarios]    Script Date: 18/10/2024 22:28:46 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -63,6 +77,7 @@ CREATE TABLE [dbo].[Usuarios](
 	[password] [nvarchar](max) NOT NULL,
 	[name] [nvarchar](max) NOT NULL,
 	[phone] [nvarchar](max) NOT NULL,
+	[IdRol] [int] NULL,
  CONSTRAINT [PK_Usuarios] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
@@ -88,4 +103,9 @@ REFERENCES [dbo].[Productos] ([id])
 ON DELETE CASCADE
 GO
 ALTER TABLE [dbo].[ProductosCarritos] CHECK CONSTRAINT [FK_ProductosCarritos_Productos_ProductoId]
+GO
+ALTER TABLE [dbo].[Usuarios]  WITH CHECK ADD  CONSTRAINT [FK_Usuarios_Rols_IdRol] FOREIGN KEY([IdRol])
+REFERENCES [dbo].[Rols] ([IdRol])
+GO
+ALTER TABLE [dbo].[Usuarios] CHECK CONSTRAINT [FK_Usuarios_Rols_IdRol]
 GO

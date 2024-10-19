@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using APINetMaui.Models;
 
 using Microsoft.DotNet.Scaffolding.Shared.Messaging;
+using System.Drawing.Printing;
 
 namespace APINetMaui.Controllers
 {
@@ -27,9 +28,13 @@ namespace APINetMaui.Controllers
         
         // GET: api/Productoes
         [HttpGet (Name ="GetAllProducts")]
-        public async Task<ActionResult<IEnumerable<ProductoResponse>>> GetProductos()
+        public async Task<ActionResult<IEnumerable<ProductoResponse>>> GetProductos(int page=1, int pageSize=7)
         {
-            List<Producto> products = await _context.Productos.ToListAsync();
+            //List<Producto> products = await _context.Productos.ToListAsync();
+            List<Producto> products = await _context.Productos
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
             List<ProductoResponse> response = new List<ProductoResponse>();
             foreach (var item in products) 
             {
